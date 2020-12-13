@@ -20,3 +20,5 @@ vulkano-win = { path = "../vulkano-win" }
 cgmath = "0.17"
 png = "0.15.0"
 time = "0.1.38"
+
+bytemuck = "1.4.1"

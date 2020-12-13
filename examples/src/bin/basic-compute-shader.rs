@@ -13,7 +13,7 @@
 // been more or more used for general-purpose operations as well. This is called "General-Purpose
 // GPU", or *GPGPU*. This is what this example demonstrates.
 
-use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
+use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer, DmaBufBuffer};
 use vulkano::command_buffer::AutoCommandBufferBuilder;
 use vulkano::descriptor::descriptor_set::PersistentDescriptorSet;
 use vulkano::descriptor::PipelineLayoutAbstract;
@@ -46,6 +46,8 @@ fn main() {
         physical,
         physical.supported_features(),
         &DeviceExtensions {
+            ext_external_memory_fd: true,
+            ext_external_memory_dma_buf: true,
             khr_storage_buffer_storage_class: true,
             ..DeviceExtensions::none()
         },
@@ -102,14 +104,15 @@ fn main() {
         ComputePipeline::new(device.clone(), &shader.main_entry_point(), &(), None).unwrap()
     });
 
-    // We start by creating the buffer that will store the data.
-    let data_buffer = {
-        // Iterator that produces the data.
-        let data_iter = (0..65536u32).map(|n| n);
-        // Builds the buffer and fills it with this iterator.
-        CpuAccessibleBuffer::from_iter(device.clone(), BufferUsage::all(), false, data_iter)
-            .unwrap()
-    };
+    let data_buffer = DmaBufBuffer::new(device.clone(), 65536 * 4, BufferUsage::all()).unwrap();
+
+    {
+        let data_buffer = &mut *data_buffer.write().unwrap();
+        let data_buffer_content = bytemuck::cast_slice_mut::<_, u32>(data_buffer);
+        for n in 0..65536u32 {
+            data_buffer_content[n as usize] = n;
+        }
+    }
 
     // In order to let the shader access the buffer, we need to build a *descriptor set* that
     // contains the buffer.
@@ -173,7 +176,8 @@ fn main() {
     // Now that the GPU is done, the content of the buffer should have been modified. Let's
     // check it out.
     // The call to `read()` would return an error if the buffer was still in use by the GPU.
-    let data_buffer_content = data_buffer.read().unwrap();
+    let data_buffer = &*data_buffer.read().unwrap();
+    let data_buffer_content = bytemuck::cast_slice::<_, u32>(data_buffer);
     for n in 0..65536u32 {
         assert_eq!(data_buffer_content[n as usize], n * 12);
     }

@@ -51,6 +51,20 @@ pub struct DeviceMemory {
 }
 
 impl DeviceMemory {
+    pub unsafe fn raw(
+        memory: vk::DeviceMemory,
+        device: Arc<Device>,
+        size: usize,
+        memory_type_index: u32,
+    ) -> DeviceMemory {
+        DeviceMemory {
+            memory,
+            device,
+            size,
+            memory_type_index,
+        }
+    }
+
     /// Allocates a chunk of memory from the device.
     ///
     /// Some platforms may have a limit on the maximum size of a single allocation. For example,

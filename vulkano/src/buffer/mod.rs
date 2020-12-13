@@ -78,6 +78,7 @@
 //!
 
 pub use self::cpu_access::CpuAccessibleBuffer;
+pub use self::dma_buf::DmaBufBuffer;
 pub use self::cpu_pool::CpuBufferPool;
 pub use self::device_local::DeviceLocalBuffer;
 pub use self::immutable::ImmutableBuffer;
@@ -91,6 +92,7 @@ pub use self::view::BufferView;
 pub use self::view::BufferViewRef;
 
 pub mod cpu_access;
+pub mod dma_buf;
 pub mod cpu_pool;
 pub mod device_local;
 pub mod immutable;

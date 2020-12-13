@@ -19,6 +19,7 @@ use std::os::raw::c_char;
 use std::os::raw::c_double;
 use std::os::raw::c_ulong;
 use std::os::raw::c_void;
+use std::os::raw::c_int;
 
 pub type Flags = u32;
 pub type Bool32 = u32;
@@ -203,6 +204,8 @@ pub const STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES: u32 = 100
 pub const STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES: u32 = 1000177000;
 pub const STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES: u32 = 1000083000;
 pub const STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES: u32 = 1000082000;
+pub const STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR: u32 = 1000074002;
+pub const STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO: u32 = 1000072002;
 
 pub type SystemAllocationScope = u32;
 pub const SYSTEM_ALLOCATION_SCOPE_COMMAND: u32 = 0;
@@ -1056,6 +1059,10 @@ pub const DESCRIPTOR_UPDATE_TEMPLATE_TYPE_RANGE_SIZE_KHR: u32 =
         - DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR
         + 1;
 pub type DescriptorUpdateTemplateCreateFlagsKHR = Flags;
+
+pub type ExternalMemoryHandleTypeFlagBits = u32;
+pub const EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT: u32 = 0x00000001;
+pub const EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT: u32 = 0x00000200;
 
 pub type PFN_vkAllocationFunction =
     extern "system" fn(*mut c_void, usize, usize, SystemAllocationScope) -> *mut c_void;
@@ -2807,6 +2814,21 @@ pub struct SurfaceFullScreenExclusiveInfoEXT {
     pub fullScreenExclusive: FullScreenExclusiveEXT,
 }
 
+#[repr(C)]
+pub struct MemoryGetFdInfoKHR {
+    pub sType: StructureType,
+    pub pNext: *const c_void,
+    pub memory: DeviceMemory,
+    pub handleType: ExternalMemoryHandleTypeFlagBits,
+}
+
+#[repr(C)]
+pub struct ExportMemoryAllocateInfoKHR {
+    pub sType: StructureType,
+    pub pNext: *const c_void,
+    pub handleType: ExternalMemoryHandleTypeFlagBits,
+}
+
 macro_rules! ptrs {
     ($struct_name:ident, { $($name:ident => ($($param_n:ident: $param_ty:ty),*) -> $ret:ty,)+ }) => (
         pub struct $struct_name {
@@ -3059,4 +3081,5 @@ ptrs!(DevicePointers, {
     AcquireFullScreenExclusiveModeEXT => (device: Device, swapchain: SwapchainKHR) -> Result,
     ReleaseFullScreenExclusiveModeEXT => (device: Device, swapchain: SwapchainKHR) -> Result,
     GetBufferDeviceAddressEXT => (device: Device, pInfo: *const BufferDeviceAddressInfo) -> DeviceAddress,
+    GetMemoryFdKHR => (device: Device, pGetFdInfo: *const MemoryGetFdInfoKHR, pFd: *mut c_int ) -> Result,
 });

@@ -67,6 +67,7 @@ extern crate fnv;
 #[macro_use]
 extern crate lazy_static;
 pub extern crate half;
+extern crate mmap;
 extern crate parking_lot;
 extern crate shared_library;
 extern crate smallvec;
@@ -186,7 +187,7 @@ impl From<Error> for OomError {
 /// All possible success codes returned by any Vulkan function.
 #[derive(Debug, Copy, Clone)]
 #[repr(u32)]
-enum Success {
+pub enum Success {
     Success = vk::SUCCESS,
     NotReady = vk::NOT_READY,
     Timeout = vk::TIMEOUT,
@@ -203,7 +204,7 @@ enum Success {
 #[derive(Debug, Copy, Clone)]
 #[repr(u32)]
 // TODO: being pub is necessary because of the weird visibility rules in rustc
-pub(crate) enum Error {
+pub enum Error {
     OutOfHostMemory = vk::ERROR_OUT_OF_HOST_MEMORY,
     OutOfDeviceMemory = vk::ERROR_OUT_OF_DEVICE_MEMORY,
     InitializationFailed = vk::ERROR_INITIALIZATION_FAILED,
@@ -225,7 +226,7 @@ pub(crate) enum Error {
 }
 
 /// Checks whether the result returned correctly.
-fn check_errors(result: vk::Result) -> Result<Success, Error> {
+pub fn check_errors(result: vk::Result) -> Result<Success, Error> {
     match result {
         vk::SUCCESS => Ok(Success::Success),
         vk::NOT_READY => Ok(Success::NotReady),
