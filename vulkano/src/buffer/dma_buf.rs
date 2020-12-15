@@ -1,4 +1,4 @@
-use ::{
+ use ::{
     buffer::{
         sys::{BufferCreationError, SparseLevel, UnsafeBuffer},
         usage::BufferUsage,
@@ -145,25 +145,10 @@ impl DmaBufBuffer {
             let mem = DeviceMemory::raw(memory, device.clone(), size, mem_ty.id());
             buffer.bind_memory(&mem, 0)?;
 
-            let get_fd_info = vk::MemoryGetFdInfoKHR {
-                sType: vk::STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR,
-                pNext: ptr::null(),
-                memory: memory,
-                handleType: vk::EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
-            };
-
-            let mut fd = MaybeUninit::uninit();
-            check_errors(vk.GetMemoryFdKHR(
-                device.internal_object(),
-                &get_fd_info as *const vk::MemoryGetFdInfoKHR,
-                fd.as_mut_ptr(),
-            ))?;
-            let fd = fd.assume_init();
-
             // println!("got fd {}", fd);
 
             Ok(Arc::new(DmaBufBuffer {
-                fd: fd,
+                fd: 0,
                 device: device,
                 inner: buffer,
                 memory: mem,
@@ -212,6 +197,48 @@ impl DmaBufBuffer {
             inner: unsafe {  MemoryMap::new(self.inner.size(), &[MapOption::MapFd(self.fd), MapOption::MapReadable, MapOption::MapWritable, MapOption::MapNonStandardFlags(0x0001)]).unwrap() },
             lock: lock,
         })
+    }
+
+    // TODO(robin): this is highly unsafe and shitty
+    pub fn leak_fd(&self) -> Result<c_int, WriteLockError> {
+        /*
+        let lock = match self.access.try_write() {
+            Some(l) => l,
+            // TODO: if a user simultaneously calls .read() or .write(), and the function is
+            //       currently finding out that the buffer is in fact GPU locked, then we will
+            //       return a CpuLocked error instead of a GpuLocked ; is this a problem?
+            //       how do we fix this?
+            None => return Err(WriteLockError::CpuLocked),
+        };
+
+        match *lock {
+            CurrentGpuAccess::NonExclusive { ref num } if num.load(Ordering::SeqCst) == 0 => (),
+            _ => return Err(WriteLockError::GpuLocked),
+        }
+
+        std::mem::forget(lock);
+        */
+
+        let get_fd_info = vk::MemoryGetFdInfoKHR {
+            sType: vk::STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR,
+            pNext: ptr::null(),
+            memory: self.memory.internal_object(),
+            handleType: vk::EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
+        };
+
+        let vk = self.device.pointers();
+        let mut fd = MaybeUninit::uninit();
+        let fd = unsafe {
+            check_errors(vk.GetMemoryFdKHR(
+                self.device.internal_object(),
+                &get_fd_info as *const vk::MemoryGetFdInfoKHR,
+                fd.as_mut_ptr(),
+            )).unwrap();
+
+            fd.assume_init()
+        };
+
+        Ok(fd)
     }
 }
 

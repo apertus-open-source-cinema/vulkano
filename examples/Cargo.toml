@@ -22,3 +22,6 @@ png = "0.15.0"
 time = "0.1.38"
 
 bytemuck = "1.4.1"
+
+gstreamer = { path = "/data/projects/gstreamer-rs"}
+gstreamer-allocators = { path = "/data/projects/gstreamer-rs"}
